@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import "forge-std/Test.sol";
 import "../contracts/CRID.sol";
-import { RegistroDisciplinas } from "../contracts/CRID.sol";
+import {RegistroDisciplinas} from "../contracts/CRID.sol";
 // import { RegistroDisciplinas.Inscricao } from "../contracts/CRID.sol"; // Importa o struct
 
 contract RegistroDisciplinasRoteiroTest is Test {
@@ -45,32 +45,15 @@ contract RegistroDisciplinasRoteiroTest is Test {
         // --- 1. Adicionar 3 disciplinas para o aluno ---
 
         vm.startPrank(owner); // Secretário realiza as inscrições
-        registroDisciplinas.inscreverAluno(
-            alunoTeste,
-            NOME_CALCULO1,
-            COD_CALCULO1,
-            PROF_MARCELO,
-            STATUS_NORMAL
-        );
-        registroDisciplinas.inscreverAluno(
-            alunoTeste,
-            NOME_CALCULO2,
-            COD_CALCULO2,
-            PROF_MONICA,
-            STATUS_NORMAL
-        );
-        registroDisciplinas.inscreverAluno(
-            alunoTeste,
-            NOME_CALCULO3,
-            COD_CALCULO3,
-            PROF_ANATOLI,
-            STATUS_NORMAL
-        );
+        registroDisciplinas.inscreverAluno(alunoTeste, NOME_CALCULO1, COD_CALCULO1, PROF_MARCELO, STATUS_NORMAL);
+        registroDisciplinas.inscreverAluno(alunoTeste, NOME_CALCULO2, COD_CALCULO2, PROF_MONICA, STATUS_NORMAL);
+        registroDisciplinas.inscreverAluno(alunoTeste, NOME_CALCULO3, COD_CALCULO3, PROF_ANATOLI, STATUS_NORMAL);
         vm.stopPrank();
 
         // --- 2. Realizar um getInscricoesAlunoPorPeriodo e validar se elas estão todas aqui ---
 
-        RegistroDisciplinas.Inscricao[] memory inscricoes = registroDisciplinas.getInscricoesAlunoPorPeriodo(alunoTeste, PERIODO_CORRENTE);
+        RegistroDisciplinas.Inscricao[] memory inscricoes =
+            registroDisciplinas.getInscricoesAlunoPorPeriodo(alunoTeste, PERIODO_CORRENTE);
 
         // Validar o número total de inscrições
         assertEq(inscricoes.length, 3, "Deve haver 3 inscricoes para o aluno.");
@@ -83,18 +66,24 @@ contract RegistroDisciplinasRoteiroTest is Test {
         bool calc2Found = false;
         bool calc3Found = false;
 
-        for (uint i = 0; i < inscricoes.length; i++) {
-            if (keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO1))) {
+        for (uint256 i = 0; i < inscricoes.length; i++) {
+            if (
+                keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO1))
+            ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO1);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MARCELO);
                 assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL);
                 calc1Found = true;
-            } else if (keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))) {
+            } else if (
+                keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))
+            ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO2);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MONICA);
                 assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL);
                 calc2Found = true;
-            } else if (keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO3))) {
+            } else if (
+                keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO3))
+            ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO3);
                 assertEq(inscricoes[i].nomeProfessor, PROF_ANATOLI);
                 assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL);
@@ -113,9 +102,13 @@ contract RegistroDisciplinasRoteiroTest is Test {
 
         // Verificar o status atualizado de Calculo 2
         inscricoes = registroDisciplinas.getInscricoesAlunoPorPeriodo(alunoTeste, PERIODO_CORRENTE);
-        for (uint i = 0; i < inscricoes.length; i++) {
-            if (keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))) {
-                assertEq(inscricoes[i].statusInscricao, STATUS_PENDENTE, "Status de Calculo 2 deve ser 'Inscricao Pendente'.");
+        for (uint256 i = 0; i < inscricoes.length; i++) {
+            if (
+                keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))
+            ) {
+                assertEq(
+                    inscricoes[i].statusInscricao, STATUS_PENDENTE, "Status de Calculo 2 deve ser 'Inscricao Pendente'."
+                );
                 break;
             }
         }
@@ -138,18 +131,24 @@ contract RegistroDisciplinasRoteiroTest is Test {
         bool calc2StillThere = false;
         bool calc3Gone = true; // Assume que foi removido
 
-        for (uint i = 0; i < inscricoes.length; i++) {
-            if (keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO1))) {
+        for (uint256 i = 0; i < inscricoes.length; i++) {
+            if (
+                keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO1))
+            ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO1);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MARCELO);
                 assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL); // Status original
                 calc1StillThere = true;
-            } else if (keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))) {
+            } else if (
+                keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))
+            ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO2);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MONICA);
                 assertEq(inscricoes[i].statusInscricao, STATUS_PENDENTE); // Status alterado
                 calc2StillThere = true;
-            } else if (keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO3))) {
+            } else if (
+                keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO3))
+            ) {
                 calc3Gone = false; // Se encontrarmos, algo deu errado
             }
         }
