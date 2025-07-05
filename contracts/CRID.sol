@@ -4,153 +4,130 @@ pragma solidity ^0.8.26;
 contract RegistroDisciplinas {
     address public owner; // O secretário do departamento
 
-    // --- Structs Existentes ---
-    struct Disciplina {
-        string nome;
-        string codigo;
-        address professor;
-        string status;
-    }
-
-    // --- Nova Struct para Inscrição ---
+    // --- Struct para Inscrição de um aluno em uma disciplina para um período
     struct Inscricao {
-        string codigoDisciplina;
-        string periodo;
-        uint timestampInscricao;
+        string nomeDisciplina;   // Nome da disciplina (ex: "Matemática Básica")
+        string codigoDisciplina; // Código da disciplina (ex: "MAT101")
+        string nomeProfessor;    // Nome do professor
+        string statusInscricao;  // Status da inscrição (ex: "Ativa", "Trancada", "Cancelada")
+        uint timestampInscricao; // Quando a inscrição foi feita
     }
 
-    // --- Mapeamentos Existentes ---
-    mapping(string => Disciplina) public crid; 
-
-    // --- Novo Mapeamento para Inscrições de Alunos ---
-    // Mapeamento: Endereço do Aluno -> Período (string) -> Lista de Inscrições
+    // --- Mapeamento para Inscrições de Alunos ---
+    // Mapeamento: Endereço do Aluno -> Período (string) -> Lista de Inscrições (a CRID do aluno para o período)
     mapping(address => mapping(string => Inscricao[])) public inscricoesAlunosPorPeriodo;
 
-    // --- Eventos Existentes ---
-    event DisciplinaAdicionada(string indexed codigo, string nome, address professor);
-    event StatusDisciplinaAlterado(string indexed codigo, bool novoStatus);
-    event ProfessorDisciplinaAlterado(string indexed codigo, address antigoProfessor, address novoProfessor);
+    // --- Eventos ---
+    event AlunoInscrito(
+        address indexed aluno,
+        string indexed codigoDisciplina,
+        string nomeDisciplina,
+        string nomeProfessor
+    );
+    event StatusInscricaoAlterado(
+        address indexed aluno,
+        string indexed codigoDisciplina,
+        string antigoStatus,
+        string novoStatus
+    );
 
-    // --- Novos Eventos de Inscrição ---
-    event AlunoInscrito(address indexed aluno, string indexed codigoDisciplina, string periodo);
-    event InscricaoAtualizada(address indexed aluno, string indexed codigoDisciplina, string periodo, bool novoStatus);
-
-    // --- Erros Existentes ---
+    // --- Erros Personalizados ---
     error ApenasOwner();
-    error DisciplinaJaExiste(string codigo);
-    error DisciplinaNaoEncontrada(string codigo);
-
-    // --- Novos Erros de Inscrição ---
-    error DisciplinaNaoAtiva(string codigo);
     error JaInscrito(address aluno, string codigoDisciplina, string periodo);
-    error NaoInscrito(address aluno, string codigoDisciplina, string periodo);
+    error InscricaoNaoEncontrada(address aluno, string codigoDisciplina, string periodo);
+    error StatusInvalido(string status);
 
-
-    // --- Construtor e Modificador (como no código anterior) ---
+    // --- Construtor ---
     constructor() {
         owner = msg.sender;
     }
 
+    // --- Modificador para restringir funções apenas ao owner ---
     modifier onlyOwner() {
         if (msg.sender != owner) {
             revert ApenasOwner();
         }
-        _;
+        _; // Continua a execução da função
     }
 
-    // --- Funções de Gerenciamento de Disciplinas (como no código anterior) ---
-    function adicionarDisciplina(string memory _nome, string memory _codigo, address _professor) public onlyOwner {
-        if (bytes(crid[_codigo].codigo).length != 0) {
-            revert DisciplinaJaExiste(_codigo);
-        }
-        crid[_codigo] = Disciplina(_nome, _codigo, _professor, true);
-        emit DisciplinaAdicionada(_codigo, _nome, _professor);
-    }
+    // --- Função para inscrever um aluno em uma disciplina para um período ---
+    // Esta função seria chamada pelo owner para registrar uma inscrição,
+    // ou por um front-end representando o aluno (se não tiver onlyOwner).
+    function inscreverAluno(
+        address _aluno,
+        string memory _nomeDisciplina,
+        string memory _codigoDisciplina,
+        string memory _nomeProfessor,
+        string memory _periodo,
+        string memory _statusInicial
+    ) public onlyOwner {
+        // Validar que o status inicial da inscrição é "Ativa" ou algum padrão esperado
+        // Não é estritamente necessário validar aqui, mas é uma boa prática para evitar lixo de dados.
 
-    function alterarStatusDisciplina(string memory _codigo, bool _novoStatus) public onlyOwner {
-        if (bytes(crid[_codigo].codigo).length == 0) {
-            revert DisciplinaNaoEncontrada(_codigo);
-        }
-        crid[_codigo].ativa = _novoStatus;
-        emit StatusDisciplinaAlterado(_codigo, _novoStatus);
-    }
-
-    function alterarProfessorDisciplina(string memory _codigo, address _novoProfessor) public onlyOwner {
-        if (bytes(crid[_codigo].codigo).length == 0) {
-            revert DisciplinaNaoEncontrada(_codigo);
-        }
-        address antigoProfessor = crid[_codigo].professor;
-        crid[_codigo].professor = _novoProfessor;
-        emit ProfessorDisciplinaAlterado(_codigo, antigoProfessor, _novoProfessor);
-    }
-
-    function getDisciplina(string memory _codigo) public view returns (string memory nome, string memory codigo, address professor, bool ativa) {
-        Disciplina storage disciplina = crid[_codigo];
-        return (disciplina.nome, disciplina.codigo, disciplina.professor, disciplina.ativa);
-    }
-
-    // --- Novas Funções para Inscrição de Alunos ---
-
-    // Função para um aluno se inscrever em uma disciplina
-    // Ou o secretário pode chamar isso para inscrever um aluno (passando o _aluno)
-    function inscreverAluno(address _aluno, string memory _codigoDisciplina, string memory _periodo) public {
-        // Pode adicionar 'onlyOwner' aqui se apenas o secretário puder inscrever,
-        // ou permitir que qualquer um (msg.sender) se inscreva para si mesmo.
-        // Para o seu cenário de "aluno consulta seu crid", vamos permitir que o aluno se inscreva.
-        // Se for o secretário que inscreve, o `msg.sender` seria o secretário e o `_aluno` seria o aluno.
-
-        // 1. Verificar se a disciplina existe e está ativa
-        Disciplina storage disciplina = crid[_codigoDisciplina];
-        if (bytes(disciplina.codigo).length == 0) {
-            revert DisciplinaNaoEncontrada(_codigoDisciplina);
-        }
-        if (!disciplina.ativa) {
-            revert DisciplinaNaoAtiva(_codigoDisciplina);
-        }
-
-        // 2. Verificar se o aluno já está inscrito na disciplina para este período
+        // 1. Verificar se o aluno já está inscrito na disciplina para este período
         // OBS: Iterar sobre um array em loop pode ser caro. Para um sistema de grande escala,
-        // você pode querer um mapeamento auxiliar para verificar a existência da inscrição mais rapidamente,
-        // tipo: mapping(address => mapping(string => mapping(string => bool))) public alunoJaInscrito;
-        // Para este exemplo, vamos iterar (ok para número limitado de inscrições por aluno/período)
+        // considere um mapeamento auxiliar como:
+        // mapping(address => mapping(string => mapping(string => bool))) public alunoJaInscritoNaDisciplinaPeriodo;
+        // para verificações rápidas.
         for (uint i = 0; i < inscricoesAlunosPorPeriodo[_aluno][_periodo].length; i++) {
-            if (keccak256(abi.encodePacked(inscricoesAlunosPorPeriodo[_aluno][_periodo][i].codigoDisciplina)) == keccak256(abi.encodePacked(_codigoDisciplina))) {
+            if (
+                keccak256(abi.encodePacked(inscricoesAlunosPorPeriodo[_aluno][_periodo][i].codigoDisciplina)) ==
+                keccak256(abi.encodePacked(_codigoDisciplina))
+            ) {
                 revert JaInscrito(_aluno, _codigoDisciplina, _periodo);
             }
         }
 
-        // 3. Adicionar a inscrição
+        // 2. Adicionar a nova inscrição ao array do aluno para o período
         inscricoesAlunosPorPeriodo[_aluno][_periodo].push(
             Inscricao({
+                nomeDisciplina: _nomeDisciplina,
                 codigoDisciplina: _codigoDisciplina,
-                periodo: _periodo,
-                ativa: true,
+                nomeProfessor: _nomeProfessor,
+                statusInscricao: _statusInicial,
                 timestampInscricao: block.timestamp
             })
         );
 
-        emit AlunoInscrito(_aluno, _codigoDisciplina, _periodo);
+        emit AlunoInscrito(_aluno, _codigoDisciplina, _nomeDisciplina, _nomeProfessor);
     }
 
-    // Função para o secretário (ou o próprio aluno, se permitido) atualizar o status de uma inscrição
-    function atualizarStatusInscricao(address _aluno, string memory _codigoDisciplina, string memory _periodo, bool _novoStatus) public onlyOwner {
-        // Apenas o owner pode alterar o status de uma inscrição para fins de controle
+    // --- Função para o secretário alterar o status de uma inscrição ---
+    // (ex: de "Ativa" para "Trancada" ou "Cancelada")
+    function alterarStatusInscricao(
+        address _aluno,
+        string memory _codigoDisciplina,
+        string memory _periodo,
+        string memory _novoStatus
+    ) public onlyOwner {
+        // Validação de status: você pode adicionar uma lista de estados permitidos aqui
+        // Ex: if (keccak256(abi.encodePacked(_novoStatus)) != keccak256(abi.encodePacked("Ativa")) && ...)
+        // Para simplicidade, não farei essa validação extensiva, mas é recomendada.
+
         bool encontrada = false;
+        string memory antigoStatus;
+
+        // Itera sobre as inscrições do aluno para o período para encontrar a disciplina
         for (uint i = 0; i < inscricoesAlunosPorPeriodo[_aluno][_periodo].length; i++) {
-            if (keccak256(abi.encodePacked(inscricoesAlunosPorPeriodo[_aluno][_periodo][i].codigoDisciplina)) == keccak256(abi.encodePacked(_codigoDisciplina))) {
-                inscricoesAlunosPorPeriodo[_aluno][_periodo][i].ativa = _novoStatus;
+            if (
+                keccak256(abi.encodePacked(inscricoesAlunosPorPeriodo[_aluno][_periodo][i].codigoDisciplina)) ==
+                keccak256(abi.encodePacked(_codigoDisciplina))
+            ) {
+                antigoStatus = inscricoesAlunosPorPeriodo[_aluno][_periodo][i].statusInscricao;
+                inscricoesAlunosPorPeriodo[_aluno][_periodo][i].statusInscricao = _novoStatus;
                 encontrada = true;
-                break;
+                break; // Encontrou e atualizou, pode sair do loop
             }
         }
 
         if (!encontrada) {
-            revert NaoInscrito(_aluno, _codigoDisciplina, _periodo);
+            revert InscricaoNaoEncontrada(_aluno, _codigoDisciplina, _periodo);
         }
-        emit InscricaoAtualizada(_aluno, _codigoDisciplina, _periodo, _novoStatus);
+
+        emit StatusInscricaoAlterado(_aluno, _codigoDisciplina, antigoStatus, _novoStatus);
     }
 
-    // Função para um aluno (ou qualquer um) consultar suas inscrições para um período
+    // --- Função para o aluno (ou qualquer um) consultar suas inscrições para um período ---
     // Esta é a função que o aluno usaria para "buscar sua CRID" para um período específico
     function getInscricoesAlunoPorPeriodo(address _aluno, string memory _periodo) public view returns (Inscricao[] memory) {
         return inscricoesAlunosPorPeriodo[_aluno][_periodo];
