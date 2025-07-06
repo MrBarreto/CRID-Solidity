@@ -9,6 +9,7 @@ contract RegistroDisciplinasRoteiroTest is Test {
     RegistroDisciplinas public registroDisciplinas;
     address public owner;
     address public alunoTeste;
+    address public nonOwner;
 
     string public NOME_CALCULO1 = "Calculo 1";
     string public COD_CALCULO1 = "COD110";
@@ -29,6 +30,7 @@ contract RegistroDisciplinasRoteiroTest is Test {
     function setUp() public {
         owner = makeAddr("owner_secretario");
         alunoTeste = makeAddr("aluno_de_teste");
+        nonOwner = makeAddr("usuario_nao_owner");
 
         vm.startPrank(owner);
         registroDisciplinas = new RegistroDisciplinas(PERIODO_CORRENTE);
@@ -145,5 +147,36 @@ contract RegistroDisciplinasRoteiroTest is Test {
         assertTrue(calc1StillThere, "Calculo 1 ainda deve estar presente.");
         assertTrue(calc2StillThere, "Calculo 2 ainda deve estar presente.");
         assertTrue(calc3Gone, "Calculo 3 deve ter sido removido.");
+    }
+
+    function testNoOwnerCallingFunctions() public {
+        bytes memory expectedRevertMsg = abi.encodeWithSelector(RegistroDisciplinas.ApenasOwner.selector);
+
+        // Testar inscreverAluno
+        vm.expectRevert(expectedRevertMsg);
+        vm.startPrank(nonOwner); // Simula o `nonOwner` fazendo a chamada
+        registroDisciplinas.inscreverAluno(alunoTeste, NOME_CALCULO1, COD_CALCULO1, PROF_MARCELO, STATUS_NORMAL);
+        vm.stopPrank();
+
+        // Testar alterarStatusInscricao
+        // Primeiro, o owner precisa inscrever algo para que haja o que alterar
+        vm.startPrank(owner);
+        registroDisciplinas.inscreverAluno(alunoTeste, NOME_CALCULO1, COD_CALCULO1, PROF_MARCELO, STATUS_NORMAL);
+        vm.stopPrank();
+
+        vm.expectRevert(expectedRevertMsg);
+        vm.startPrank(nonOwner);
+        registroDisciplinas.alterarStatusInscricao(alunoTeste, COD_CALCULO1, STATUS_PENDENTE);
+        vm.stopPrank();
+
+        // Testar removerInscricao
+        vm.startPrank(owner);
+        registroDisciplinas.inscreverAluno(alunoTeste, NOME_CALCULO2, COD_CALCULO2, PROF_MONICA, STATUS_NORMAL); // Outra disciplina
+        vm.stopPrank();
+
+        vm.expectRevert(expectedRevertMsg);
+        vm.startPrank(nonOwner);
+        registroDisciplinas.removerInscricao(alunoTeste, COD_CALCULO2);
+        vm.stopPrank();
     }
 }
