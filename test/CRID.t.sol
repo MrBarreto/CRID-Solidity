@@ -5,13 +5,11 @@ import "forge-std/Test.sol";
 import "../contracts/CRID.sol";
 import {RegistroDisciplinas} from "../contracts/CRID.sol";
 
-
 contract RegistroDisciplinasRoteiroTest is Test {
     RegistroDisciplinas public registroDisciplinas;
     address public owner;
     address public alunoTeste;
 
-    
     string public NOME_CALCULO1 = "Calculo 1";
     string public COD_CALCULO1 = "COD110";
     string public PROF_MARCELO = "Marcelo";
@@ -26,21 +24,17 @@ contract RegistroDisciplinasRoteiroTest is Test {
     string public COD_CALCULO3 = "COD130";
     string public PROF_ANATOLI = "Anatoli";
 
-    
     string public PERIODO_CORRENTE = "2025.1";
 
-    
     function setUp() public {
         owner = makeAddr("owner_secretario");
         alunoTeste = makeAddr("aluno_de_teste");
 
-        
         vm.startPrank(owner);
         registroDisciplinas = new RegistroDisciplinas(PERIODO_CORRENTE);
         vm.stopPrank();
     }
 
-    
     function testCRUD() public {
         // --- 1. Adicionar 3 disciplinas para o aluno ---
 
@@ -133,24 +127,23 @@ contract RegistroDisciplinasRoteiroTest is Test {
             ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO1);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MARCELO);
-                assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL); 
+                assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL);
                 calc1StillThere = true;
             } else if (
                 keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))
             ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO2);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MONICA);
-                assertEq(inscricoes[i].statusInscricao, STATUS_PENDENTE); 
+                assertEq(inscricoes[i].statusInscricao, STATUS_PENDENTE);
                 calc2StillThere = true;
             } else if (
                 keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO3))
             ) {
-                calc3Gone = false; 
+                calc3Gone = false;
             }
         }
         assertTrue(calc1StillThere, "Calculo 1 ainda deve estar presente.");
         assertTrue(calc2StillThere, "Calculo 2 ainda deve estar presente.");
         assertTrue(calc3Gone, "Calculo 3 deve ter sido removido.");
     }
-
 }
