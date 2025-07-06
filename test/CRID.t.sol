@@ -4,14 +4,14 @@ pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 import "../contracts/CRID.sol";
 import {RegistroDisciplinas} from "../contracts/CRID.sol";
-// import { RegistroDisciplinas.Inscricao } from "../contracts/CRID.sol"; // Importa o struct
+
 
 contract RegistroDisciplinasRoteiroTest is Test {
     RegistroDisciplinas public registroDisciplinas;
     address public owner;
-    address public alunoTeste; // Usaremos este como o aluno principal para os testes
+    address public alunoTeste;
 
-    // Nomes e códigos de disciplina para fácil referência
+    
     string public NOME_CALCULO1 = "Calculo 1";
     string public COD_CALCULO1 = "COD110";
     string public PROF_MARCELO = "Marcelo";
@@ -20,28 +20,28 @@ contract RegistroDisciplinasRoteiroTest is Test {
     string public NOME_CALCULO2 = "Calculo 2";
     string public COD_CALCULO2 = "COD120";
     string public PROF_MONICA = "Monica";
-    string public STATUS_PENDENTE = "Inscricao Pendente"; // Novo status para teste
+    string public STATUS_PENDENTE = "Inscricao Pendente";
 
     string public NOME_CALCULO3 = "Calculo 3";
     string public COD_CALCULO3 = "COD130";
     string public PROF_ANATOLI = "Anatoli";
 
-    // O período corrente será definido no construtor do contrato no setUp
+    
     string public PERIODO_CORRENTE = "2025.1";
 
-    // `setUp()` é executado antes de cada teste
+    
     function setUp() public {
         owner = makeAddr("owner_secretario");
-        alunoTeste = makeAddr("aluno_de_teste"); // Endereço para o aluno
+        alunoTeste = makeAddr("aluno_de_teste");
 
-        // Secretário inicializa o contrato com o período corrente 2025.1
+        
         vm.startPrank(owner);
         registroDisciplinas = new RegistroDisciplinas(PERIODO_CORRENTE);
         vm.stopPrank();
     }
 
-    // --- Teste Principal do Roteiro ---
-    function testRoteiroCompletoInscricoes() public {
+    
+    function testCRUD() public {
         // --- 1. Adicionar 3 disciplinas para o aluno ---
 
         vm.startPrank(owner); // Secretário realiza as inscrições
@@ -58,10 +58,6 @@ contract RegistroDisciplinasRoteiroTest is Test {
         // Validar o número total de inscrições
         assertEq(inscricoes.length, 3, "Deve haver 3 inscricoes para o aluno.");
 
-        // Validar os detalhes de cada inscrição
-        // Como a ordem pode variar com push/pop, vamos verificar se todas estão presentes
-        // e, em seguida, validar o conteúdo. Uma forma de fazer isso é iterar
-        // ou usar um helper se a lista for muito grande. Para 3, podemos ser explícitos.
         bool calc1Found = false;
         bool calc2Found = false;
         bool calc3Found = false;
@@ -129,7 +125,7 @@ contract RegistroDisciplinasRoteiroTest is Test {
         // Validar que Calculo 3 não está mais presente e que as outras estão
         bool calc1StillThere = false;
         bool calc2StillThere = false;
-        bool calc3Gone = true; // Assume que foi removido
+        bool calc3Gone = true;
 
         for (uint256 i = 0; i < inscricoes.length; i++) {
             if (
@@ -137,23 +133,24 @@ contract RegistroDisciplinasRoteiroTest is Test {
             ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO1);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MARCELO);
-                assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL); // Status original
+                assertEq(inscricoes[i].statusInscricao, STATUS_NORMAL); 
                 calc1StillThere = true;
             } else if (
                 keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO2))
             ) {
                 assertEq(inscricoes[i].nomeDisciplina, NOME_CALCULO2);
                 assertEq(inscricoes[i].nomeProfessor, PROF_MONICA);
-                assertEq(inscricoes[i].statusInscricao, STATUS_PENDENTE); // Status alterado
+                assertEq(inscricoes[i].statusInscricao, STATUS_PENDENTE); 
                 calc2StillThere = true;
             } else if (
                 keccak256(abi.encodePacked(inscricoes[i].codigoDisciplina)) == keccak256(abi.encodePacked(COD_CALCULO3))
             ) {
-                calc3Gone = false; // Se encontrarmos, algo deu errado
+                calc3Gone = false; 
             }
         }
         assertTrue(calc1StillThere, "Calculo 1 ainda deve estar presente.");
         assertTrue(calc2StillThere, "Calculo 2 ainda deve estar presente.");
         assertTrue(calc3Gone, "Calculo 3 deve ter sido removido.");
     }
+
 }
